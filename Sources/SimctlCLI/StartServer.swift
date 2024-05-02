@@ -11,6 +11,12 @@ import ShellOut
 import SimctlShared
 import Swifter
 
+class TestingSharedState {
+    var enabled: Bool = false
+    
+    static var shared = TestingSharedState()
+}
+
 struct StartServer: ParsableCommand {
     static var configuration = CommandConfiguration(abstract: "Start the server that will be called by your test code to run the commands")
 
@@ -19,10 +25,14 @@ struct StartServer: ParsableCommand {
 
     @Flag(name: .shortAndLong, help: "Show the commands received and the responses sent")
     var verbose = false
+    
+    @Flag(name: .shortAndLong, help: "Start with or without clones of simulators")
+    var testing = false
 
     mutating func run() throws {
         let server = SimctlServer()
         let v = verbose
+        TestingSharedState.shared.enabled = testing
 
         server.onPushNotification { deviceId, bundleId, pushContent -> Result<String, Swift.Error> in
             runCommand(.simctlPush(to: deviceId, pushContent: pushContent, bundleIdentifier: bundleId), verbose: v)

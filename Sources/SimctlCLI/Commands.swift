@@ -19,7 +19,8 @@ extension ShellOutCommand {
     }
 
     private static func simctl(_ cmd: String) -> String {
-        "xcrun simctl \(cmd)"
+        let testingFlag = TestingSharedState.shared.enabled ? "--set testing" : ""
+        return "xcrun simctl \(testingFlag) \(cmd)"
     }
 
     /// Usage: simctl list [-j | --json] [-v] [devices|devicetypes|runtimes|pairs] [<search term>|available]
@@ -47,7 +48,7 @@ extension ShellOutCommand {
     }
 
     static func simctlOpen(url: URL, on device: UUID) -> ShellOutCommand {
-        .init(string: simctl("openurl \(device.uuidString) \(url.absoluteString)"))
+        .init(string: simctl("openurl \(device.uuidString) \"\(url.absoluteString)\""))
     }
 
     /// Usage: simctl ui <device> <option> [<arguments>]
