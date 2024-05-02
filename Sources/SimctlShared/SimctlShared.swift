@@ -72,6 +72,7 @@ public enum HeaderFieldKey: String {
     case deviceName = "device_name"
     case targetBundleIdentifier = "target_bundle_identifier"
     case deviceAppearance = "device_appearance"
+    case enrollingType = "enrolling_type"
 }
 
 public enum ServerPath: String {
@@ -86,6 +87,9 @@ public enum ServerPath: String {
     case statusBarOverrides = "/simctl/statusBarOverrides"
     case openURL = "/simctl/openUrl"
     case getAppContainer = "/simctl/getAppContainer"
+    case enrollmentChanged = "/simctl/enrollmentChanged"
+    case touchIdMatch = "/simctl/touchIdMatch"
+    case touchIdNomatch = "/simctl/touchIdNomatch"
 }
 
 /// Some permission changes will terminate the application if running.
@@ -132,6 +136,13 @@ public enum DeviceAppearance: String {
     case light
     /// The Dark appearance style.
     case dark
+}
+
+public enum EnrollingType: String {
+    /// Turn on enrolling FaceId
+    case on = "1"
+    /// Turn off enrolling FaceId
+    case off = "0"
 }
 
 internal protocol StatusBarOverrideArgument {

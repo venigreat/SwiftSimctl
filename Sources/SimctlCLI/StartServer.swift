@@ -81,6 +81,18 @@ struct StartServer: ParsableCommand {
         server.onGetAppContainer { deviceId, appBundleId, container -> Result<String, Swift.Error> in
             runCommand(.simctlGetAppContainer(device: deviceId, appBundleIdentifier: appBundleId, container: container))
         }
+        
+        server.onTriggerEnrollingChange{ deviceId, _, type -> Result<String, Swift.Error> in
+            runCommand(.simctlEnrollingChange(device: deviceId, type: type), verbose: v)
+        }
+
+        server.onTriggerTouchIdMatch { deviceId, _ -> Result<String, Swift.Error> in
+            runCommand(.simctlTouchIdMatch(device: deviceId), verbose: v)
+        }
+        
+        server.onTriggerTouchIdNomatch { deviceId, _ -> Result<String, Swift.Error> in
+            runCommand(.simctlTouchIdNomatch(device: deviceId), verbose: v)
+        }
 
         server.startServer(on: port)
     }

@@ -163,6 +163,36 @@ extension ShellOutCommand {
             return .init(string: simctl("get_app_container \(device.uuidString) \(appBundleIdentifier)"))
         }
     }
+    
+    /// Turning on/off FaceId on device
+    ///
+    /// Usage: simctl spawn <device> notifyutil -s com.apple.BiometricKit.enrollmentChanged  <id>
+    ///
+    ///     id        on/off param
+    ///
+    /// - Parameter device: The device Udid
+    static func simctlEnrollingChange(device: UUID, type: EnrollingType) -> ShellOutCommand {
+        .init(string: simctl("spawn \(device.uuidString) notifyutil -s com.apple.BiometricKit.enrollmentChanged '\(type.rawValue)' && ") +
+        simctl("spawn \(device.uuidString) notifyutil -p com.apple.BiometricKit.enrollmentChanged"))
+    }
+    
+    /// Trigger match TouchId on a device.
+    ///
+    /// Usage: simctl spawn <device> notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.match
+    ///
+    /// - Parameter device: The device Udid
+    static func simctlTouchIdMatch(device: UUID) -> ShellOutCommand {
+        .init(string: simctl("spawn \(device.uuidString) notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.match"))
+    }
+    
+    /// Trigger nomatch TouchId on a device.
+    ///
+    /// Usage: simctl spawn <device> notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.nomatch
+    ///
+    /// - Parameter device: The device Udid
+    static func simctlTouchIdNomatch(device: UUID) -> ShellOutCommand {
+        .init(string: simctl("spawn \(device.uuidString) notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.nomatch"))
+    }
 }
 
 internal enum ListFilterType: String {

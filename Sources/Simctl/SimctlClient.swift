@@ -269,6 +269,8 @@ extension SimctlClient {
         case clearStatusBarOverrides(SimctlClientEnvironment)
         case openURL(SimctlClientEnvironment, URLContainer)
         case getAppContainer(SimctlClientEnvironment, AppContainer?)
+        case touchIdMatch(SimctlClientEnvironment)
+        case touchIdNomatch(SimctlClientEnvironment)
 
         @inlinable var httpMethod: HttpMethod {
             switch self {
@@ -285,7 +287,9 @@ extension SimctlClient {
                  .setDeviceAppearance,
                  .triggerICloudSync,
                  .uninstallApp,
-                 .clearStatusBarOverrides:
+                 .clearStatusBarOverrides,
+                 .touchIdMatch,
+                 .touchIdNomatch:
                 return .get
             }
         }
@@ -327,6 +331,12 @@ extension SimctlClient {
 
             case .getAppContainer:
                 return .getAppContainer
+                
+            case .touchIdMatch:
+                return .touchIdMatch
+                
+            case .touchIdNomatch:
+                return .touchIdNomatch
             }
         }
 
@@ -348,7 +358,9 @@ extension SimctlClient {
                  let .setStatusBarOverrides(env, _),
                  let .clearStatusBarOverrides(env),
                  let .openURL(env, _),
-                 let .getAppContainer(env, _):
+                 let .getAppContainer(env, _),
+                 let .touchIdMatch(env),
+                 let .touchIdNomatch(env):
                 return setEnv(env)
 
             case let .setPrivacy(env, action, service):
@@ -397,7 +409,9 @@ extension SimctlClient {
                  .setDeviceAppearance,
                  .triggerICloudSync,
                  .uninstallApp,
-                 .clearStatusBarOverrides:
+                 .clearStatusBarOverrides,
+                 .touchIdMatch,
+                 .touchIdNomatch:
                 return nil
             }
         }

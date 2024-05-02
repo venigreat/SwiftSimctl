@@ -368,4 +368,75 @@ internal final class SimctlServer {
             }
         }
     }
+    
+  
+    func onTriggerEnrollingChange(_ closure: @escaping (UUID, String?, EnrollingType) -> Result<String, Swift.Error>) {
+        server.GET[ServerPath.enrollmentChanged.rawValue] = { request in
+            guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
+                return .badRequest(.text("Device Udid missing or corrupt."))
+            }
+
+            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
+                return .badRequest(.text("Bundle Id missing or corrupt."))
+            }
+
+            guard let type: EnrollingType = request.headerValue(for: .enrollingType) else {
+                return .badRequest(.text("Enrolling type missing or corrupt."))
+            }
+
+            let result = closure(deviceId, bundleId, type)
+
+            switch result {
+            case let .success(output):
+                return .ok(.text(output))
+
+            case let .failure(error):
+                return .badRequest(.text(error.localizedDescription))
+            }
+        }
+    }
+    
+    func onTriggerTouchIdMatch(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+        server.GET[ServerPath.touchIdMatch.rawValue] = { request in
+            guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
+                return .badRequest(.text("Device Udid missing or corrupt."))
+            }
+
+            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
+                return .badRequest(.text("Bundle Id missing or corrupt."))
+            }
+
+            let result = closure(deviceId, bundleId)
+
+            switch result {
+            case let .success(output):
+                return .ok(.text(output))
+
+            case let .failure(error):
+                return .badRequest(.text(error.localizedDescription))
+            }
+        }
+    }
+    
+    func onTriggerTouchIdNomatch(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+        server.GET[ServerPath.touchIdNomatch.rawValue] = { request in
+            guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
+                return .badRequest(.text("Device Udid missing or corrupt."))
+            }
+
+            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
+                return .badRequest(.text("Bundle Id missing or corrupt."))
+            }
+
+            let result = closure(deviceId, bundleId)
+
+            switch result {
+            case let .success(output):
+                return .ok(.text(output))
+
+            case let .failure(error):
+                return .badRequest(.text(error.localizedDescription))
+            }
+        }
+    }
 }
