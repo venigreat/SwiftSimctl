@@ -141,6 +141,25 @@ public class SimctlClient {
     public func getAppContainer(_ container: AppContainer? = nil, completion: @escaping DataTaskCallback) {
         dataTask(.getAppContainer(env, container), completion)
     }
+    
+    /// TouchId/FaceId turning on/off
+    /// - Parameter type: Enrollment type on/off
+    /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func enrollmentChanged(_ type: EnrollingType, _ completion: @escaping DataTaskCallback) {
+        dataTask(.enrollmentChanged(env, type), completion)
+    }
+    
+    /// TouchId/FaceId matching
+    /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func touchIdMatch(_ completion: @escaping DataTaskCallback) {
+        dataTask(.touchIdMatch(env), completion)
+    }
+    
+    /// TouchId/FaceId notmatching
+    /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func touchIdNomatch(_ completion: @escaping DataTaskCallback) {
+        dataTask(.touchIdNomatch(env), completion)
+    }
 }
 
 // MARK: - Enviroment {
@@ -278,6 +297,7 @@ extension SimctlClient {
         case clearStatusBarOverrides(SimctlClientEnvironment)
         case openURL(SimctlClientEnvironment, URLContainer)
         case getAppContainer(SimctlClientEnvironment, AppContainer?)
+        case enrollmentChanged(SimctlClientEnvironment, EnrollingType)
         case touchIdMatch(SimctlClientEnvironment)
         case touchIdNomatch(SimctlClientEnvironment)
 
@@ -298,6 +318,7 @@ extension SimctlClient {
                  .installApp,
                  .uninstallApp,
                  .clearStatusBarOverrides,
+                 .enrollmentChanged,
                  .touchIdMatch,
                  .touchIdNomatch:
                 return .get
@@ -344,6 +365,9 @@ extension SimctlClient {
 
             case .getAppContainer:
                 return .getAppContainer
+                
+            case .enrollmentChanged:
+                return .enrollmentChanged
                 
             case .touchIdMatch:
                 return .touchIdMatch
@@ -402,6 +426,11 @@ extension SimctlClient {
                 var fields = setEnv(env)
                 fields.append(HeaderField(.deviceAppearance, appearance.rawValue))
                 return fields
+                
+            case let .enrollmentChanged(env, type):
+                var fields = setEnv(env)
+                fields.append(HeaderField(.enrollingType, type.rawValue))
+                return fields
             }
         }
 
@@ -429,6 +458,7 @@ extension SimctlClient {
                  .installApp,
                  .uninstallApp,
                  .clearStatusBarOverrides,
+                 .enrollmentChanged,
                  .touchIdMatch,
                  .touchIdNomatch:
                 return nil
