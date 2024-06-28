@@ -109,6 +109,17 @@ extension ShellOutCommand {
     static func simctlTriggerICloudSync(device: UUID) -> ShellOutCommand {
         .init(string: simctl("icloud_sync \(device.uuidString)"))
     }
+    
+    /// Install an app on a device.
+    ///
+    /// Usage: simctl install <device> <path to app>
+    ///
+    /// - Parameters:
+    ///   - device: The device Udid
+    ///   - path: Path to app.
+    static func simctlInstallApp(device: UUID, path: String) -> ShellOutCommand {
+        .init(string: simctl("uninstall \(device.uuidString) \(path)"))
+    }
 
     /// Uninstall an app from a device.
     ///

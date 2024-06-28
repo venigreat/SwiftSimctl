@@ -220,6 +220,34 @@ internal final class SimctlServer {
             }
         }
     }
+    
+    /// Callback to be executed on uninstall app device request.
+    /// - Parameter closure: The closure to be executed.
+    func onInstallApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+        server.GET[ServerPath.installApp.rawValue] = { request in
+            guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
+                return .badRequest(.text("Device Udid missing or corrupt."))
+            }
+
+            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
+                return .badRequest(.text("Bundle Id missing or corrupt."))
+            }
+
+            guard let path: String = request.headerValue(for: .path) else {
+                return .badRequest(.text("No path parameter provided."))
+            }
+
+            let result = closure(deviceId, bundleId, path)
+
+            switch result {
+            case let .success(output):
+                return .ok(.text(output))
+
+            case let .failure(error):
+                return .badRequest(.text(error.localizedDescription))
+            }
+        }
+    }
 
     /// Callback to be executed on uninstall app device request.
     /// - Parameter closure: The closure to be executed.

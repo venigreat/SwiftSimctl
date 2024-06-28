@@ -61,6 +61,10 @@ struct StartServer: ParsableCommand {
         server.onTriggerICloudSync { deviceId, _ -> Result<String, Swift.Error> in
             runCommand(.simctlTriggerICloudSync(device: deviceId), verbose: v)
         }
+        
+        server.onInstallApp { deviceId, _, path -> Result<String, Swift.Error> in
+            runCommand(.simctlInstallApp(device: deviceId, path: path), verbose: v)
+        }
 
         server.onUninstallApp { deviceId, _, appBundleId -> Result<String, Swift.Error> in
             runCommand(.simctlUninstallApp(device: deviceId, appBundleIdentifier: appBundleId), verbose: v)
