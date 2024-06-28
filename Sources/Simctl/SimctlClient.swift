@@ -100,6 +100,14 @@ public class SimctlClient {
     public func triggerICloudSync(_ completion: @escaping DataTaskCallback) {
         dataTask(.triggerICloudSync(env), completion)
     }
+    
+    /// Install an app on this device.
+    /// - Parameters:
+    ///   - path: Path to .app file.
+    ///   - completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func installApp(_ path: String, _ completion: @escaping DataTaskCallback) {
+        dataTask(.installApp(env, path), completion)
+    }
 
     /// Uninstall an app from this device.
     /// - Parameters:
@@ -264,6 +272,7 @@ extension SimctlClient {
         case erase(SimctlClientEnvironment)
         case setDeviceAppearance(SimctlClientEnvironment, DeviceAppearance)
         case triggerICloudSync(SimctlClientEnvironment)
+        case installApp(SimctlClientEnvironment, String)
         case uninstallApp(SimctlClientEnvironment, String)
         case setStatusBarOverrides(SimctlClientEnvironment, Set<StatusBarOverride>)
         case clearStatusBarOverrides(SimctlClientEnvironment)
@@ -286,6 +295,7 @@ extension SimctlClient {
                  .erase,
                  .setDeviceAppearance,
                  .triggerICloudSync,
+                 .installApp,
                  .uninstallApp,
                  .clearStatusBarOverrides,
                  .touchIdMatch,
@@ -316,6 +326,9 @@ extension SimctlClient {
 
             case .triggerICloudSync:
                 return .iCloudSync
+                
+            case .installApp:
+                return .installApp
 
             case .uninstallApp:
                 return .uninstallApp
@@ -379,6 +392,11 @@ extension SimctlClient {
                 var fields = setEnv(env)
                 fields.append(HeaderField(.targetBundleIdentifier, appBundleIdentifier))
                 return fields
+                
+            case let .installApp(env, path):
+                var fields = setEnv(env)
+                fields.append(HeaderField(.targetBundleIdentifier, path))
+                return fields
 
             case let .setDeviceAppearance(env, appearance):
                 var fields = setEnv(env)
@@ -408,6 +426,7 @@ extension SimctlClient {
                  .erase,
                  .setDeviceAppearance,
                  .triggerICloudSync,
+                 .installApp,
                  .uninstallApp,
                  .clearStatusBarOverrides,
                  .touchIdMatch,

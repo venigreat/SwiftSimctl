@@ -73,6 +73,7 @@ public enum HeaderFieldKey: String {
     case targetBundleIdentifier = "target_bundle_identifier"
     case deviceAppearance = "device_appearance"
     case enrollingType = "enrolling_type"
+    case path = "path"
 }
 
 public enum ServerPath: String {
@@ -83,6 +84,7 @@ public enum ServerPath: String {
     case erase = "/simctl/erase"
     case deviceAppearance = "/simctl/setDeviceAppearance"
     case iCloudSync = "/simctl/iCloudSync"
+    case installApp = "/simctl/installApp"
     case uninstallApp = "/simctl/uninstallApp"
     case statusBarOverrides = "/simctl/statusBarOverrides"
     case openURL = "/simctl/openUrl"
