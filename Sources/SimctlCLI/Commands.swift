@@ -118,7 +118,7 @@ extension ShellOutCommand {
     ///   - device: The device Udid
     ///   - path: Path to app.
     static func simctlInstallApp(device: UUID, path: String) -> ShellOutCommand {
-        .init(string: simctl("uninstall \(device.uuidString) \(path)"))
+        .init(string: simctl("install \(device.uuidString) \(path)"))
     }
 
     /// Uninstall an app from a device.
