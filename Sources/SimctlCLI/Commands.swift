@@ -204,6 +204,15 @@ extension ShellOutCommand {
     static func simctlTouchIdNomatch(device: UUID) -> ShellOutCommand {
         .init(string: simctl("spawn \(device.uuidString) notifyutil -p com.apple.BiometricKit_Sim.fingerTouch.nomatch"))
     }
+    
+    /// Trigger shake device.
+    ///
+    /// Usage: simctl notify_post  <device> com.apple.UIKit.SimulatorShake
+    ///
+    /// - Parameter device: The device Udid
+    static func simctlShake(device: UUID) -> ShellOutCommand {
+        .init(string: simctl("notify_post \(device.uuidString) com.apple.UIKit.SimulatorShake"))
+    }
 }
 
 internal enum ListFilterType: String {

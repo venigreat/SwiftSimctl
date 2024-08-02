@@ -97,6 +97,10 @@ struct StartServer: ParsableCommand {
         server.onTriggerTouchIdNomatch { deviceId, _ -> Result<String, Swift.Error> in
             runCommand(.simctlTouchIdNomatch(device: deviceId), verbose: v)
         }
+        
+        server.onTriggerShake { deviceId, _ -> Result<String, Swift.Error> in
+            runCommand(.simctlShake(device: deviceId), verbose: v)
+        }
 
         server.startServer(on: port)
     }

@@ -160,6 +160,12 @@ public class SimctlClient {
     public func touchIdNomatch(_ completion: @escaping DataTaskCallback) {
         dataTask(.touchIdNomatch(env), completion)
     }
+    
+    /// Shake device
+    /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func shake(_ completion: @escaping DataTaskCallback) {
+        dataTask(.shake(env), completion)
+    }
 }
 
 // MARK: - Enviroment {
@@ -300,6 +306,7 @@ extension SimctlClient {
         case enrollmentChanged(SimctlClientEnvironment, EnrollingType)
         case touchIdMatch(SimctlClientEnvironment)
         case touchIdNomatch(SimctlClientEnvironment)
+        case shake(SimctlClientEnvironment)
 
         @inlinable var httpMethod: HttpMethod {
             switch self {
@@ -320,7 +327,8 @@ extension SimctlClient {
                  .clearStatusBarOverrides,
                  .enrollmentChanged,
                  .touchIdMatch,
-                 .touchIdNomatch:
+                 .touchIdNomatch,
+                 .shake:
                 return .get
             }
         }
@@ -374,6 +382,8 @@ extension SimctlClient {
                 
             case .touchIdNomatch:
                 return .touchIdNomatch
+            case .shake:
+                return .shake
             }
         }
 
@@ -397,7 +407,8 @@ extension SimctlClient {
                  let .openURL(env, _),
                  let .getAppContainer(env, _),
                  let .touchIdMatch(env),
-                 let .touchIdNomatch(env):
+                 let .touchIdNomatch(env),
+                let .shake(env):
                 return setEnv(env)
 
             case let .setPrivacy(env, action, service):
@@ -460,7 +471,8 @@ extension SimctlClient {
                  .clearStatusBarOverrides,
                  .enrollmentChanged,
                  .touchIdMatch,
-                 .touchIdNomatch:
+                 .touchIdNomatch,
+                 .shake:
                 return nil
             }
         }

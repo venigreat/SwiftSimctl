@@ -92,6 +92,7 @@ public enum ServerPath: String {
     case enrollmentChanged = "/simctl/enrollmentChanged"
     case touchIdMatch = "/simctl/touchIdMatch"
     case touchIdNomatch = "/simctl/touchIdNomatch"
+    case shake = "/simctl/shake"
 }
 
 /// Some permission changes will terminate the application if running.
