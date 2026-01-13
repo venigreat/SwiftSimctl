@@ -166,6 +166,19 @@ public class SimctlClient {
     public func shake(_ completion: @escaping DataTaskCallback) {
         dataTask(.shake(env), completion)
     }
+    
+    /// Start a record video.
+    /// - Parameter path: Path to video file.
+    /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func startRecordVideo(_ path: String, _ completion: @escaping DataTaskCallback) {
+        dataTask(.startRecordVideo(env, path), completion)
+    }
+    
+    /// Kill simctl process.
+    /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
+    public func killSimctl(_ completion: @escaping DataTaskCallback) {
+        dataTask(.killSimctl(env), completion)
+    }
 }
 
 // MARK: - Enviroment {
@@ -307,6 +320,8 @@ extension SimctlClient {
         case touchIdMatch(SimctlClientEnvironment)
         case touchIdNomatch(SimctlClientEnvironment)
         case shake(SimctlClientEnvironment)
+        case startRecordVideo(SimctlClientEnvironment, String)
+        case killSimctl(SimctlClientEnvironment)
 
         @inlinable var httpMethod: HttpMethod {
             switch self {
@@ -328,7 +343,9 @@ extension SimctlClient {
                  .enrollmentChanged,
                  .touchIdMatch,
                  .touchIdNomatch,
-                 .shake:
+                 .shake,
+                 .startRecordVideo,
+                 .killSimctl:
                 return .get
             }
         }
@@ -384,6 +401,12 @@ extension SimctlClient {
                 return .touchIdNomatch
             case .shake:
                 return .shake
+                
+            case .startRecordVideo:
+                return .startRecordVideo
+            
+            case .killSimctl:
+                return .killSimctl
             }
         }
 
@@ -408,7 +431,8 @@ extension SimctlClient {
                  let .getAppContainer(env, _),
                  let .touchIdMatch(env),
                  let .touchIdNomatch(env),
-                let .shake(env):
+                 let .shake(env),
+                 let .killSimctl(env):
                 return setEnv(env)
 
             case let .setPrivacy(env, action, service):
@@ -442,6 +466,11 @@ extension SimctlClient {
                 var fields = setEnv(env)
                 fields.append(HeaderField(.enrollingType, type.rawValue))
                 return fields
+                
+            case let .startRecordVideo(env, path):
+                var fields = setEnv(env)
+                fields.append(HeaderField(.path, path))
+                return fields
             }
         }
 
@@ -472,7 +501,9 @@ extension SimctlClient {
                  .enrollmentChanged,
                  .touchIdMatch,
                  .touchIdNomatch,
-                 .shake:
+                 .shake,
+                 .startRecordVideo,
+                 .killSimctl:
                 return nil
             }
         }

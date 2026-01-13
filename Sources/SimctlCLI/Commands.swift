@@ -213,6 +213,25 @@ extension ShellOutCommand {
     static func simctlShake(device: UUID) -> ShellOutCommand {
         .init(string: simctl("notify_post \(device.uuidString) com.apple.UIKit.SimulatorShake"))
     }
+
+    /// Record screen
+    ///
+    /// Usage: simctl io <device> recordVideo <path>
+    ///
+    /// - Parameters:
+    ///   - device: The device Udid
+    ///   - appBundleIdentifier: App bundle identifier of the app to uninstall.
+    static func simctlStartRecordVideo(device: UUID, path: String) -> ShellOutCommand {
+        .init(string: simctl("io \(device.uuidString) recordVideo \(path) > /dev/null 2>&1 &"))
+    }
+    
+    /// Kill simctl process
+    ///
+    /// Usage: pkill -2 simctl
+    ///
+    static func killSimctl() -> ShellOutCommand {
+        .init(string: "pkill -2 simctl")
+    }
 }
 
 internal enum ListFilterType: String {

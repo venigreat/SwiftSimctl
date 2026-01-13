@@ -102,6 +102,14 @@ struct StartServer: ParsableCommand {
             runCommand(.simctlShake(device: deviceId), verbose: v)
         }
 
+        server.onStartRecordVideo { deviceId, _, path -> Result<String, Swift.Error> in
+            runCommand(.simctlStartRecordVideo(device: deviceId, path: path), verbose: v)
+        }
+        
+        server.onKillSimctl { _, _ -> Result<String, Swift.Error> in
+            runCommand(.killSimctl(), verbose: v)
+        }
+
         server.startServer(on: port)
     }
 }

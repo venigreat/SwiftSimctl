@@ -276,6 +276,34 @@ internal final class SimctlServer {
             }
         }
     }
+    
+    /// Callback to be executed on start recording screen request.
+    /// - Parameter closure: The closure to be executed.
+    func onStartRecordVideo(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+        server.GET[ServerPath.startRecordVideo.rawValue] = { request in
+            guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
+                return .badRequest(.text("Device Udid missing or corrupt."))
+            }
+
+            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
+                return .badRequest(.text("Bundle Id missing or corrupt."))
+            }
+
+            guard let path: String = request.headerValue(for: .path) else {
+                return .badRequest(.text("No path parameter provided."))
+            }
+
+            let result = closure(deviceId, bundleId, path)
+
+            switch result {
+            case let .success(output):
+                return .ok(.text(output))
+
+            case let .failure(error):
+                return .badRequest(.text(error.localizedDescription))
+            }
+        }
+    }
 
     /// Callback to be executed on set status bar override request.
     /// - Parameter closure: The closure to be executed.
@@ -470,6 +498,28 @@ internal final class SimctlServer {
     
     func onTriggerShake(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.shake.rawValue] = { request in
+            guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
+                return .badRequest(.text("Device Udid missing or corrupt."))
+            }
+
+            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
+                return .badRequest(.text("Bundle Id missing or corrupt."))
+            }
+
+            let result = closure(deviceId, bundleId)
+
+            switch result {
+            case let .success(output):
+                return .ok(.text(output))
+
+            case let .failure(error):
+                return .badRequest(.text(error.localizedDescription))
+            }
+        }
+    }
+    
+    func onKillSimctl(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+        server.GET[ServerPath.killSimctl.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
             }
