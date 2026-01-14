@@ -75,7 +75,7 @@ extension ShellOutCommand {
         if (service == PrivacyService.all){
             TCCDbEditor().all(action, bundleIdentifier: bundleIdentifier!, device: device)
             return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
-        } else if (service != PrivacyService.userTracking || service != PrivacyService.faceId) {
+        } else if (![PrivacyService.userTracking, PrivacyService.faceId].contains(service)){
             return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
         }
         else {
