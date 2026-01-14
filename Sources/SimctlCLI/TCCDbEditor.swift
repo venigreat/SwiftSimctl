@@ -39,17 +39,8 @@ public class TCCDbEditor {
         return "Success"
     }
      
-    public func manage(_ action: PrivacyAction, permissionsFor service: PrivacyService, bundleIdentifier: String, device: UUID) -> String {
+    private func getSql(_ action: PrivacyAction, needService: String, bundleIdentifier: String) -> String {
         let sql: String
-        let needService: String
-        
-        switch service {
-            case .userTracking: needService = "kTCCServiceUserTracking"
-            case .faceId: needService = "kTCCServiceFaceID"
-            default: needService = "kTCCServiceUserTracking"
-        }
-        
-
         switch action {
             case .grant:
                 sql = """
@@ -90,6 +81,20 @@ public class TCCDbEditor {
                 AND client = '\(bundleIdentifier)';
                 """
             }
+        return sql
+    }
+    
+    public func manage(_ action: PrivacyAction, permissionsFor service: PrivacyService, bundleIdentifier: String, device: UUID) -> String {
+        let needService: String
+        
+        switch service {
+            case .userTracking: needService = "kTCCServiceUserTracking"
+            case .faceId: needService = "kTCCServiceFaceID"
+            default: needService = "kTCCServiceUserTracking"
+        }
+        
+
+        let sql = getSql(action, needService: needService, bundleIdentifier: bundleIdentifier)
 
         return execute(device: device, sql: sql)
     }
@@ -98,7 +103,6 @@ public class TCCDbEditor {
         var results: [String] = []
         
         permissions.forEach { needService in
-            var sql: String
             switch action {
                 case .grant:
                     sql = """
@@ -139,6 +143,7 @@ public class TCCDbEditor {
                         AND client = '\(bundleIdentifier)';
                         """
             }
+            let sql = getSql(action, needService: needService, bundleIdentifier: bundleIdentifier)
             results.append(execute(device: device, sql: sql))
         }
         return results.joined(separator: ",")

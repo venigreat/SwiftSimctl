@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SQLite3
 import ShellOut
 import SimctlShared
 
@@ -76,12 +75,12 @@ extension ShellOutCommand {
         if (service == PrivacyService.all){
             TCCDbEditor().manage(action, permissionsFor: service, bundleIdentifier: bundleIdentifier!, device: device)
             return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
-        } else if (service != PrivacyService.userTracking) {
+        } else if (service != PrivacyService.userTracking || service != PrivacyService.faceId) {
             return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
         }
         else {
             let status = TCCDbEditor().manage(action, permissionsFor: service, bundleIdentifier: bundleIdentifier!, device: device)
-            return .init(string: "echo \(status)") // Костыль
+            return .init(string: "echo \(status)") // Needs for readeable return from function
         }
     }
 
