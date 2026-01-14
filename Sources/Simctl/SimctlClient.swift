@@ -406,7 +406,7 @@ extension SimctlClient {
                 return .startRecordVideo
             
             case .killSimctl:
-                return .killSimctl
+                return .kill
             }
         }
 

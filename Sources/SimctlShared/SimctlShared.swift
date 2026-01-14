@@ -93,7 +93,8 @@ public enum ServerPath: String {
     case touchIdMatch = "/simctl/touchIdMatch"
     case touchIdNomatch = "/simctl/touchIdNomatch"
     case shake = "/simctl/shake"
-    case startRecordVideo = "/simctl/startRecordVideo" 
+    case startRecordVideo = "/simctl/startRecordVideo"
+    case kill = "/simctl/kill"
 }
 
 /// Some permission changes will terminate the application if running.
@@ -133,6 +134,12 @@ public enum PrivacyService: String {
     case reminders
     /// Allow use of the app with Siri.
     case siri
+    /// Allow use of camera
+    case camera
+    /// Allow track user
+    case userTracking
+    /// Allow usage of faceId
+    case faceId
 }
 
 public enum DeviceAppearance: String {

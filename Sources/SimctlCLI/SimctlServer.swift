@@ -519,7 +519,7 @@ internal final class SimctlServer {
     }
     
     func onKillSimctl(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
-        server.GET[ServerPath.killSimctl.rawValue] = { request in
+        server.GET[ServerPath.kill.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
             }
