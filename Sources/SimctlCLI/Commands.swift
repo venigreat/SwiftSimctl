@@ -72,7 +72,16 @@ extension ShellOutCommand {
 
     ///  simctl privacy <device> <action> <service> [<bundle identifier>]
     static func simctlPrivacy(_ action: PrivacyAction, permissionsFor service: PrivacyService, on device: UUID, bundleIdentifier: String?) -> ShellOutCommand {
-        .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
+        if (service == PrivacyService.all){
+            TCCDbEditor().manage(action, permissionsFor: service, bundleIdentifier: bundleIdentifier!, device: device)
+            return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
+        } else if (service != PrivacyService.userTracking || service != PrivacyService.faceId) {
+            return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
+        }
+        else {
+            let status = TCCDbEditor().manage(action, permissionsFor: service, bundleIdentifier: bundleIdentifier!, device: device)
+            return .init(string: "echo \(status)") // Needs for readeable return from function
+        }
     }
 
     /// Rename a device.
