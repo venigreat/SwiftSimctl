@@ -73,7 +73,7 @@ extension ShellOutCommand {
     ///  simctl privacy <device> <action> <service> [<bundle identifier>]
     static func simctlPrivacy(_ action: PrivacyAction, permissionsFor service: PrivacyService, on device: UUID, bundleIdentifier: String?) -> ShellOutCommand {
         if (service == PrivacyService.all){
-            TCCDbEditor().all(action, permissionsFor: service, bundleIdentifier: bundleIdentifier!, device: device)
+            TCCDbEditor().all(action, bundleIdentifier: bundleIdentifier!, device: device)
             return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
         } else if (service != PrivacyService.userTracking || service != PrivacyService.faceId) {
             return .init(string: simctl("privacy \(device.uuidString) \(action.rawValue) \(service.rawValue) \(bundleIdentifier ?? "")"))
