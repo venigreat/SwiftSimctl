@@ -95,7 +95,6 @@ public class TCCDbEditor {
         
 
         let sql = getSql(action, needService: needService, bundleIdentifier: bundleIdentifier)
-
         return execute(device: device, sql: sql)
     }
     
@@ -103,46 +102,6 @@ public class TCCDbEditor {
         var results: [String] = []
         
         permissions.forEach { needService in
-            switch action {
-                case .grant:
-                    sql = """
-                        REPLACE INTO access
-                        (service,
-                        client,
-                        client_type,
-                        auth_value,
-                        auth_reason,
-                        auth_version)
-                        VALUES
-                        ('\(needService)', '\(bundleIdentifier)', 0,
-                        2,
-                        2,
-                        1);
-                        """
-                    
-                case .revoke:
-                    sql = """
-                        REPLACE INTO access
-                        (service,
-                        client,
-                        client_type,
-                        auth_value,
-                        auth_reason,
-                        auth_version)
-                        VALUES
-                        ('\(needService)', '\(bundleIdentifier)', 0,
-                        0,
-                        2,
-                        1);
-                        """
-                    
-                case .reset:
-                    sql = """
-                        DELETE FROM access
-                        WHERE service = '\(needService)'
-                        AND client = '\(bundleIdentifier)';
-                        """
-            }
             let sql = getSql(action, needService: needService, bundleIdentifier: bundleIdentifier)
             results.append(execute(device: device, sql: sql))
         }
