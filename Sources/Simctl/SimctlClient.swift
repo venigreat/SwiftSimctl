@@ -23,12 +23,6 @@ import AppKit
 /// This is acchieved by opening a client-server connection and sending requests to the server
 /// which in turn trigger execution of local commands on the server machine.
 public class SimctlClient {
-    /// Address and port to the host machine.
-    ///
-    /// Note: if you like to use another port here, you need to provide it
-    /// when starting up the server via the `--port` flag.
-    static var host: Host = .localhost(port: 8080)
-
     let session: URLSession
     let env: SimctlClientEnvironment
 
@@ -40,8 +34,12 @@ public class SimctlClient {
 
     /// Start client in a given environment.
     public init(environment: SimctlClientEnvironment) {
-        session = URLSession(configuration: .default)
-        Self.host = environment.host
+        self.session = URLSession(configuration: .default)
+        self.env = environment
+    }
+
+    init(environment: SimctlClientEnvironment, session: URLSession) {
+        self.session = session
         self.env = environment
     }
 
@@ -168,13 +166,14 @@ public class SimctlClient {
     }
     
     /// Start a record video.
-    /// - Parameter path: Path to video file.
+    /// - Parameter path: Absolute host path to a new video file in an existing writable directory.
     /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
     public func startRecordVideo(_ path: String, _ completion: @escaping DataTaskCallback) {
         dataTask(.startRecordVideo(env, path), completion)
     }
     
-    /// Kill simctl process.
+    /// Stop the video recording started by this server for this client's device.
+    /// The legacy method name is retained; unrelated simctl processes are not stopped.
     /// - Parameter completion: Result callback of the call. Use this to wait for an expectation to fulfill in a test case.
     public func killSimctl(_ completion: @escaping DataTaskCallback) {
         dataTask(.killSimctl(env), completion)
@@ -294,7 +293,10 @@ extension SimctlClient.Host: Equatable { }
 extension SimctlClient {
     public enum Error: Swift.Error {
         case noHttpResponse(Route)
+        /// Legacy error case; current HTTP failures are returned as `serverError` with their body.
         case unexpectedHttpStatusCode(Route, HTTPURLResponse)
+        /// An HTTP failure including the server's diagnostic response body.
+        case serverError(Route, HTTPURLResponse, Data)
         case noData(Route, HTTPURLResponse)
         case serviceError(Swift.Error)
     }
@@ -454,7 +456,7 @@ extension SimctlClient {
                 
             case let .installApp(env, path):
                 var fields = setEnv(env)
-                fields.append(HeaderField(.targetBundleIdentifier, path))
+                fields.append(HeaderField(.path, path))
                 return fields
 
             case let .setDeviceAppearance(env, appearance):
@@ -487,7 +489,7 @@ extension SimctlClient {
                 return try? encoder.encode(urlContainer)
 
             case let .getAppContainer(_, container):
-                return try? encoder.encode(container)
+                return try? encoder.encode(container ?? .app)
 
             case .setPrivacy,
                  .renameDevice,
@@ -508,8 +510,23 @@ extension SimctlClient {
             }
         }
 
+        var environment: SimctlClientEnvironment {
+            switch self {
+            case let .sendPushNotification(env, _), let .setPrivacy(env, _, _),
+                 let .renameDevice(env, _), let .terminateApp(env, _), let .erase(env),
+                 let .setDeviceAppearance(env, _), let .triggerICloudSync(env),
+                 let .installApp(env, _), let .uninstallApp(env, _),
+                 let .setStatusBarOverrides(env, _), let .clearStatusBarOverrides(env),
+                 let .openURL(env, _), let .getAppContainer(env, _),
+                 let .enrollmentChanged(env, _), let .touchIdMatch(env),
+                 let .touchIdNomatch(env), let .shake(env), let .startRecordVideo(env, _),
+                 let .killSimctl(env):
+                return env
+            }
+        }
+
         func asURL() -> URL {
-            let urlString: String = SimctlClient.host.host + path.rawValue
+            let urlString: String = environment.host.host + path.rawValue
             guard let url = URL(string: urlString) else {
                 fatalError("no valid url \(urlString)")
             }
@@ -571,7 +588,7 @@ extension SimctlClient {
             }
 
             guard response.statusCode == 200 else {
-                completion(.failure(Error.unexpectedHttpStatusCode(route, response)))
+                completion(.failure(Error.serverError(route, response, data ?? Data())))
                 return
             }
 
@@ -622,3 +639,24 @@ public struct HeaderField {
 }
 
 extension HeaderField: Equatable { }
+
+extension SimctlClient.Error: LocalizedError {
+    /// The diagnostic body returned by the server for an unsuccessful request.
+    public var responseBody: Data? {
+        if case let .serverError(_, _, data) = self { return data }
+        return nil
+    }
+
+    public var errorDescription: String? {
+        switch self {
+        case let .serverError(_, response, data):
+            let message = String(data: data, encoding: .utf8) ?? "<non-UTF8 response>"
+            return "HTTP \(response.statusCode): \(message)"
+        case let .unexpectedHttpStatusCode(_, response):
+            return "HTTP \(response.statusCode)"
+        case let .serviceError(error): return error.localizedDescription
+        case .noHttpResponse: return "The server did not return an HTTP response."
+        case .noData: return "The server did not return response data."
+        }
+    }
+}

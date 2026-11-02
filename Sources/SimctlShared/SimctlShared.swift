@@ -121,11 +121,11 @@ public enum PrivacyService: String {
     /// Allow access to location services at all times.
     case locationAlways = "location-always"
     /// Allow adding photos to the photo library.
-    case photosAdd = " photos-add"
+    case photosAdd = "photos-add"
     /// Allow full access to the photo library.
     case photos
     /// Allow access to the media library.
-    case media
+    case media = "media-library"
     /// Allow access to audio input.
     case microphone
     /// Allow access to motion and fitness data.
@@ -136,7 +136,7 @@ public enum PrivacyService: String {
     case siri
     /// Allow use of camera
     case camera
-    /// Allow track user
+    /// Set App Tracking Transparency authorization. Changing this permission stops the target app; relaunch it after the callback.
     case userTracking
     /// Allow usage of faceId
     case faceId
@@ -165,6 +165,13 @@ public struct StatusBarOverride {
 
     private init(_ argument: StatusBarOverrideArgument) {
         self.command = argument.toArgument
+    }
+
+    /// Separate process arguments, preserving spaces and special characters in the value.
+    /// The encoded `command` field is retained for compatibility with existing clients.
+    public var arguments: [String] {
+        let parts = command.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: false)
+        return parts.map(String.init)
     }
 
     public static func dataNetwork(_ dataNetworkType: DataNetworkType) -> StatusBarOverride {

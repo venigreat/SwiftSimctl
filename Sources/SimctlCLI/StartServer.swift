@@ -6,16 +6,10 @@
 //
 
 import ArgumentParser
+import Darwin
 import Foundation
-import ShellOut
+import SimctlServerCore
 import SimctlShared
-import Swifter
-
-class TestingSharedState {
-    var enabled: Bool = false
-    
-    static var shared = TestingSharedState()
-}
 
 struct StartServer: ParsableCommand {
     static var configuration = CommandConfiguration(abstract: "Start the server that will be called by your test code to run the commands")
@@ -23,7 +17,7 @@ struct StartServer: ParsableCommand {
     @Option(name: .shortAndLong, help: "The port to listen on")
     var port: SimctlShared.Port = Port(8080)
 
-    @Flag(name: .shortAndLong, help: "Show the commands received and the responses sent")
+    @Flag(name: .shortAndLong, help: "Show command results and errors")
     var verbose = false
     
     @Flag(name: .shortAndLong, help: "Start with or without clones of simulators")
@@ -32,7 +26,17 @@ struct StartServer: ParsableCommand {
     mutating func run() throws {
         let server = SimctlServer()
         let v = verbose
-        TestingSharedState.shared.enabled = testing
+        let runner = CommandRunner(deviceSet: testing ? "testing" : nil)
+        func runCommand(_ command: SimctlCommand, verbose: Bool = false) -> Result<String, Swift.Error> {
+            let result = Result { try runner.execute(command) }
+            if verbose {
+                switch result {
+                case let .success(output): print("Success: \(output)")
+                case let .failure(error): print("Failure: \(error.localizedDescription)")
+                }
+            }
+            return result
+        }
 
         server.onPushNotification { deviceId, bundleId, pushContent -> Result<String, Swift.Error> in
             runCommand(.simctlPush(to: deviceId, pushContent: pushContent, bundleIdentifier: bundleId), verbose: v)
@@ -47,11 +51,11 @@ struct StartServer: ParsableCommand {
         }
 
         server.onTerminateApp { deviceId, _, appBundleId -> Result<String, Swift.Error> in
-            runCommand( .simctlTerminateApp(device: deviceId, appBundleIdentifier: appBundleId), verbose: v)
+            runCommand(.simctlTerminateApp(device: deviceId, appBundleIdentifier: appBundleId), verbose: v)
         }
 
         server.onErase { deviceId -> Result<String, Swift.Error> in
-            runCommand( .simctlErase(device: deviceId), verbose: v)
+            runCommand(.simctlErase(device: deviceId), verbose: v)
         }
 
         server.onSetDeviceAppearance { deviceId, _, appearance -> Result<String, Swift.Error> in
@@ -79,14 +83,14 @@ struct StartServer: ParsableCommand {
         }
 
         server.onOpenUrl { deviceId, _, url -> Result<String, Swift.Error> in
-            runCommand(.simctlOpen(url: url, on: deviceId))
+            runCommand(.simctlOpen(url: url, on: deviceId), verbose: v)
         }
 
         server.onGetAppContainer { deviceId, appBundleId, container -> Result<String, Swift.Error> in
-            runCommand(.simctlGetAppContainer(device: deviceId, appBundleIdentifier: appBundleId, container: container))
+            runCommand(.simctlGetAppContainer(device: deviceId, appBundleIdentifier: appBundleId, container: container), verbose: v)
         }
         
-        server.onTriggerEnrollingChange{ deviceId, _, type -> Result<String, Swift.Error> in
+        server.onTriggerEnrollingChange { deviceId, _, type -> Result<String, Swift.Error> in
             runCommand(.simctlEnrollingChange(device: deviceId, type: type), verbose: v)
         }
 
@@ -106,28 +110,26 @@ struct StartServer: ParsableCommand {
             runCommand(.simctlStartRecordVideo(device: deviceId, path: path), verbose: v)
         }
         
-        server.onKillSimctl { _, _ -> Result<String, Swift.Error> in
-            runCommand(.killSimctl(), verbose: v)
+        server.onKillSimctl { device, _ -> Result<String, Swift.Error> in
+            runCommand(.stopRecording(device: device), verbose: v)
         }
 
-        server.startServer(on: port)
-    }
-}
-
-private func runCommand(_ cmd: ShellOutCommand, verbose: Bool = false) -> Result<String, Swift.Error> {
-    if verbose {
-        print("Command: \(cmd.string)")
-    }
-    do {
-        let output: String = try shellOut(to: cmd)
-        if verbose {
-            print("Success: \(output)")
+        try server.startServer(on: port)
+        print("Server listening on 127.0.0.1:\(port)...")
+        let signalCodes: [Int32] = [SIGINT, SIGTERM]
+        let signals = signalCodes.map { code -> DispatchSourceSignal in
+            Darwin.signal(code, { _ in })
+            let source = DispatchSource.makeSignalSource(signal: code, queue: .main)
+            source.setEventHandler {
+                runner.stopAllRecordings()
+                server.stop()
+                Darwin.exit(0)
+            }
+            source.resume()
+            return source
         }
-        return .success(output)
-    } catch {
-        if verbose {
-            print("Failure: \(error)")
+        withExtendedLifetime((server, runner, signals)) {
+            RunLoop.main.run()
         }
-        return .failure(error)
     }
 }

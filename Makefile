@@ -40,7 +40,7 @@ genLinuxTests:
 	swiftlint --fix --format --path Tests/
 
 .PHONY: test
-test: genLinuxTests
+test:
 	swift test
 
 .PHONY: genXcode

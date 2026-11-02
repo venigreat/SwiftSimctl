@@ -5,39 +5,34 @@
 //  Created by Christian Treffs on 18.03.20.
 //
 import Foundation
-import ShellOut
 import SimctlShared
 import Swifter
 
 /// The server used to receive commands from an app and
 /// translate them into commands on the local machine.
-internal final class SimctlServer {
+public final class SimctlServer {
     let server: HttpServer
 
-    init() {
+    public init() {
         server = HttpServer()
+        server.listenAddressIPv4 = "127.0.0.1"
+        server.listenAddressIPv6 = "::1"
     }
 
     /// Start a server that listens to library requests from your app and executes simctl commands on your machine.
     /// - Parameter port: the port on which to listen.
-    func startServer(on port: SimctlShared.Port) {
-        do {
-            try server.start(port)
-            print("Server listening on port \(port)...")
-            RunLoop.main.run()
-        } catch {
-            fatalError("Unable to start server on port \(port)")
-        }
+    public func startServer(on port: SimctlShared.Port) throws {
+        try server.start(port, forceIPv4: true)
     }
 
     /// Stop the server.
-    func stop() {
+    public func stop() {
         server.stop()
     }
 
     /// Callback to be executed on push notifcation send request.
     /// - Parameter closure: The closure to be executed.
-    func onPushNotification(_ closure: @escaping (UUID, String?, PushNotificationContent) -> Result<String, Swift.Error>) {
+    public func onPushNotification(_ closure: @escaping (UUID, String?, PushNotificationContent) -> Result<String, Swift.Error>) {
         server.POST[ServerPath.pushNotification.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -69,22 +64,26 @@ internal final class SimctlServer {
 
     /// Callback to be executed on privacy change request.
     /// - Parameter closure: The closure to be executed.
-    func onPrivacy(_ closure: @escaping (UUID, String?, PrivacyAction, PrivacyService) -> Result<String, Swift.Error>) {
+    public func onPrivacy(_ closure: @escaping (UUID, String?, PrivacyAction, PrivacyService) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.privacy.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
             }
 
-            guard let bundleId = request.headerValue(for: .bundleIdentifier) else {
-                return .badRequest(.text("Bundle Id missing or corrupt."))
-            }
+            let bundleId = request.headerValue(for: .bundleIdentifier)
 
             guard let action: PrivacyAction = request.headerValue(for: .privacyAction) else {
                 return .badRequest(.text("Privacy action missing or corrupt."))
             }
 
-            guard let service: PrivacyService = request.headerValue(for: .privacyService) else {
+            let rawService = request.headerValue(for: .privacyService)
+            let service = rawService.flatMap { PrivacyService(rawValue: $0 == "media" ? "media-library" : $0) }
+            guard let service = service else {
                 return .badRequest(.text("Privacy service missing or corrupt."))
+            }
+
+            guard action == .reset || !(bundleId ?? "").isEmpty else {
+                return .badRequest(.text("Bundle Id is required for grant and revoke."))
             }
 
             let result = closure(deviceId, bundleId, action, service)
@@ -101,7 +100,7 @@ internal final class SimctlServer {
 
     /// Callback to be executed on rename device request.
     /// - Parameter closure: The closure to be executed.
-    func onRename(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+    public func onRename(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.renameDevice.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -129,7 +128,7 @@ internal final class SimctlServer {
 
     /// Callback to be executed on terminate app device request.
     /// - Parameter closure: The closure to be executed.
-    func onTerminateApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+    public func onTerminateApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.terminateApp.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -155,7 +154,7 @@ internal final class SimctlServer {
         }
     }
 
-    func onErase(_ closure: @escaping (UUID) -> Result<String, Swift.Error>) {
+    public func onErase(_ closure: @escaping (UUID) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.erase.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -173,7 +172,7 @@ internal final class SimctlServer {
         }
     }
 
-    func onSetDeviceAppearance(_ closure: @escaping (UUID, String?, DeviceAppearance) -> Result<String, Swift.Error>) {
+    public func onSetDeviceAppearance(_ closure: @escaping (UUID, String?, DeviceAppearance) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.deviceAppearance.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -199,7 +198,7 @@ internal final class SimctlServer {
         }
     }
 
-    func onTriggerICloudSync(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+    public func onTriggerICloudSync(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.iCloudSync.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -220,10 +219,10 @@ internal final class SimctlServer {
             }
         }
     }
-    
+
     /// Callback to be executed on uninstall app device request.
     /// - Parameter closure: The closure to be executed.
-    func onInstallApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+    public func onInstallApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.installApp.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -233,7 +232,7 @@ internal final class SimctlServer {
                 return .badRequest(.text("Bundle Id missing or corrupt."))
             }
 
-            guard let path: String = request.headerValue(for: .path) else {
+            guard let path = request.headerValue(for: .path) ?? request.headerValue(for: .targetBundleIdentifier) else {
                 return .badRequest(.text("No path parameter provided."))
             }
 
@@ -251,7 +250,7 @@ internal final class SimctlServer {
 
     /// Callback to be executed on uninstall app device request.
     /// - Parameter closure: The closure to be executed.
-    func onUninstallApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+    public func onUninstallApp(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.uninstallApp.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -276,10 +275,10 @@ internal final class SimctlServer {
             }
         }
     }
-    
+
     /// Callback to be executed on start recording screen request.
     /// - Parameter closure: The closure to be executed.
-    func onStartRecordVideo(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
+    public func onStartRecordVideo(_ closure: @escaping (UUID, String?, String) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.startRecordVideo.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -307,7 +306,7 @@ internal final class SimctlServer {
 
     /// Callback to be executed on set status bar override request.
     /// - Parameter closure: The closure to be executed.
-    func onSetStatusBarOverride(_ closure: @escaping (UUID, String?, Set<StatusBarOverride>) -> Result<String, Swift.Error>) {
+    public func onSetStatusBarOverride(_ closure: @escaping (UUID, String?, Set<StatusBarOverride>) -> Result<String, Swift.Error>) {
         server.POST[ServerPath.statusBarOverrides.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -339,7 +338,7 @@ internal final class SimctlServer {
 
     /// Callback to be executed on clear status bar override request.
     /// - Parameter closure: The closure to be executed.
-    func onClearStatusBarOverrides(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+    public func onClearStatusBarOverrides(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.statusBarOverrides.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -363,7 +362,7 @@ internal final class SimctlServer {
 
     /// Callback to be executed on open url request.
     /// - Parameter closure: The closure to be executed.
-    func onOpenUrl(_ closure: @escaping (UUID, String?, URL) -> Result<String, Swift.Error>) {
+    public func onOpenUrl(_ closure: @escaping (UUID, String?, URL) -> Result<String, Swift.Error>) {
         server.POST[ServerPath.openURL.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -394,7 +393,7 @@ internal final class SimctlServer {
         }
     }
 
-    func onGetAppContainer(_ closure: @escaping (UUID, String, AppContainer) -> Result<String, Swift.Error>) {
+    public func onGetAppContainer(_ closure: @escaping (UUID, String, AppContainer) -> Result<String, Swift.Error>) {
         server.POST[ServerPath.getAppContainer.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -408,7 +407,7 @@ internal final class SimctlServer {
 
             let appContainer: AppContainer
             do {
-                appContainer = try JSONDecoder().decode(AppContainer.self, from: bodyData)
+                appContainer = try JSONDecoder().decode(AppContainer?.self, from: bodyData) ?? .app
             } catch {
                 return .badRequest(.text(error.localizedDescription))
             }
@@ -424,9 +423,9 @@ internal final class SimctlServer {
             }
         }
     }
-    
-  
-    func onTriggerEnrollingChange(_ closure: @escaping (UUID, String?, EnrollingType) -> Result<String, Swift.Error>) {
+
+
+    public func onTriggerEnrollingChange(_ closure: @escaping (UUID, String?, EnrollingType) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.enrollmentChanged.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -451,8 +450,8 @@ internal final class SimctlServer {
             }
         }
     }
-    
-    func onTriggerTouchIdMatch(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+
+    public func onTriggerTouchIdMatch(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.touchIdMatch.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -473,8 +472,8 @@ internal final class SimctlServer {
             }
         }
     }
-    
-    func onTriggerTouchIdNomatch(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+
+    public func onTriggerTouchIdNomatch(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.touchIdNomatch.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -495,8 +494,8 @@ internal final class SimctlServer {
             }
         }
     }
-    
-    func onTriggerShake(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+
+    public func onTriggerShake(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.shake.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))
@@ -517,8 +516,8 @@ internal final class SimctlServer {
             }
         }
     }
-    
-    func onKillSimctl(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
+
+    public func onKillSimctl(_ closure: @escaping (UUID, String?) -> Result<String, Swift.Error>) {
         server.GET[ServerPath.kill.rawValue] = { request in
             guard let deviceId = request.headerValue(for: .deviceUdid, UUID.init) else {
                 return .badRequest(.text("Device Udid missing or corrupt."))

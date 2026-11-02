@@ -14,13 +14,15 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "swift-argument-parser", url: "https://github.com/apple/swift-argument-parser", from: "1.2.2"),
-        .package(name: "ShellOut", url: "https://github.com/JohnSundell/ShellOut.git", from: "2.3.0"),
         .package(name: "Swifter",  url: "https://github.com/httpswift/swifter.git", from: "1.5.0")
     ],
     targets: [
         .target(name: "SimctlShared"),
-        .target(name: "SimctlCLI", dependencies: ["SimctlShared", "ShellOut", "Swifter", .product(name: "ArgumentParser", package: "swift-argument-parser")]),
-        .target(name: "Simctl", dependencies: ["SimctlShared"])
+        .target(name: "SimctlServerCore", dependencies: ["SimctlShared", "Swifter"]),
+        .target(name: "SimctlCLI", dependencies: ["SimctlShared", "SimctlServerCore", .product(name: "ArgumentParser", package: "swift-argument-parser")]),
+        .target(name: "Simctl", dependencies: ["SimctlShared"]),
+        .testTarget(name: "SimctlTests", dependencies: ["Simctl", "SimctlShared"]),
+        .testTarget(name: "SimctlServerCoreTests", dependencies: ["SimctlServerCore", "SimctlShared", "Swifter"])
     ],
     swiftLanguageVersions: [.v5]
 )
